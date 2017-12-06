@@ -12,6 +12,7 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
+import org.apache.avro.Schema.Type;
 import org.apache.avro.file.CodecFactory;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
@@ -94,6 +95,14 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		List<String> fieldNameList = new ArrayList<>(nFields);
 		for (Field f : fieldList) {
 			fieldNameList.add(f.name());
+			String typeName;
+			Type type = f.schema().getType();
+			if (type.equals(Type.UNION)) {
+				typeName = f.schema().getTypes().get(0).getName();
+			} else {
+				typeName = type.getName();
+			}
+			System.out.println("Field: " + f.name() + ", type: " + typeName);
 		}
 		System.out.printf("Namespace: %s, N columns: %d\n\n", schema.getNamespace(), nFields);
 		
