@@ -93,6 +93,7 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		List<Field> fieldList = schema.getFields();
 		int nFields = fieldList.size();
 		List<String> fieldNameList = new ArrayList<>(nFields);
+		List<String> fieldTypeNameList = new ArrayList<>(nFields);
 		for (Field f : fieldList) {
 			fieldNameList.add(f.name());
 			String typeName;
@@ -102,6 +103,7 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 			} else {
 				typeName = type.getName();
 			}
+			fieldTypeNameList.add(typeName);
 			System.out.println("Field: " + f.name() + ", type: " + typeName);
 		}
 		System.out.printf("Namespace: %s, N columns: %d\n\n", schema.getNamespace(), nFields);
@@ -130,7 +132,17 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				// Only add non-null values
 				if (colValue != null && colValue.length() > 0) {
 					// Need to deal with types: String is ok, but must handle boolean, int, etc.
-					row.put(fieldNameList.get(i), colValue);
+					String fieldName = fieldNameList.get(i);
+					String fieldTypeName = fieldTypeNameList.get(i);
+					if ("string".equals(fieldTypeName)) {
+						row.put(fieldNameList.get(i), colValue);
+					} else if ("boolean".equals(fieldTypeName)) {
+						row.put(fieldNameList.get(i), Boolean.valueOf(colValue));
+					} else if ("int".equals(fieldTypeName)) {
+						row.put(fieldNameList.get(i), Integer.valueOf(colValue));
+					} else {
+						throw new RuntimeException("Unsupported Avro type: " + fieldTypeName);
+					}
 				}
 			}
 			dataFileWriter.append(row);
@@ -147,6 +159,7 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 	// Open a new output file, appending the batch number to the file name
 	private DataFileWriter<GenericRecord> getDataFileWriter (int chunkNumber) throws IOException {
 		String avroFileName = String.format("%s-%03d.avro", outFileBaseName, chunkNumber);
+		System.out.println("Opening new Avro file: " + avroFileName);
 		File file = new File(avroFileName);
 		DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<GenericRecord>(schema);
 		DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(datumWriter);
