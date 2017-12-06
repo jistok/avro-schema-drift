@@ -1,8 +1,16 @@
 package io.pivotal.dil.avroschemadrift;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.avro.Schema;
+import org.apache.avro.Schema.Field;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -62,8 +70,33 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				usage();
 			}
 		}
+		System.out.println("\n"
+				+ "Avro schema file: " + schemaFile + "\n"
+				+ "CSV file (input): " + csvFile + "\n"
+				+ "Output file base name: " + outFileBaseName + "\n"
+				+ "N rows per batch: " + nRowsPerBatch
+		);
 		Schema schema = new Schema.Parser().parse(new File(schemaFile));
-		System.out.printf("Namespace: %s, N columns: %d\n", schema.getNamespace(), schema.getFields().size());
+		List<Field> fieldList = schema.getFields();
+		int nFields = fieldList.size();
+		System.out.printf("Namespace: %s, N columns: %d\n\n", schema.getNamespace(), nFields);
+		
+		// Open the CSV input file, supporting uncompressed and Gzip compressed files (with ".gz" suffix)
+		InputStream fileStream = new FileInputStream(csvFile);
+		BufferedReader br = null;
+		if (csvFile.endsWith(".gz")) {
+			Reader decoder = new InputStreamReader(new GZIPInputStream(fileStream), "UTF-8");
+			br = new BufferedReader(decoder);
+		} else {
+			br = new BufferedReader(new InputStreamReader(fileStream));
+		}
+		String csvLine = null;
+		while ((csvLine = br.readLine()) != null) {
+			System.out.println(csvLine);
+		}
+		br.close();
+		
+		// Open the output file, appending the batch number to the file name
 	}
 	
 	private void usage() {
