@@ -24,3 +24,6 @@ do
 done
 ```
 
+That should yield 30 files in /tmp, each containing 1,000 entries.  Next: figure out how we'll load
+these Avro files, detecting and reacting to any *schema drift* as we do that.
+

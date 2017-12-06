@@ -1,5 +1,6 @@
 {
-  "namespace": "crimes.v1",
+  "namespace": "io.pivotal.dil",
+  "doc": "v.1",
   "type": "record",
   "name": "Crimes",
   "fields": [
