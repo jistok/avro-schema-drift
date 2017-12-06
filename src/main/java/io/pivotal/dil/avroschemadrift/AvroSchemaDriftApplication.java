@@ -28,13 +28,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * Reference:
  * 
- * Types: https://avro.apache.org/docs/1.8.2/spec.html
- * Commons CSV: https://commons.apache.org/proper/commons-csv/user-guide.html
- * Compression: https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/DataFileWriter.html
- * Avro API: https://avro.apache.org/docs/current/gettingstartedjava.html#Serializing+and+deserializing+without+code+generation
- * Avro command line utility: http://www.michael-noll.com/blog/2013/03/17/reading-and-writing-avro-files-from-the-command-line/
- * Download Avro: http://mirror.cc.columbia.edu/pub/software/apache/avro/avro-1.8.2/java/
- * On versioning: https://stackoverflow.com/questions/12165589/does-avro-schema-evolution-require-access-to-both-old-and-new-schemas
+ * Types: https://avro.apache.org/docs/1.8.2/spec.html Commons CSV:
+ * https://commons.apache.org/proper/commons-csv/user-guide.html Compression:
+ * https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/DataFileWriter.html
+ * Avro API:
+ * https://avro.apache.org/docs/current/gettingstartedjava.html#Serializing+and+deserializing+without+code+generation
+ * Avro command line utility:
+ * http://www.michael-noll.com/blog/2013/03/17/reading-and-writing-avro-files-from-the-command-line/
+ * Download Avro:
+ * http://mirror.cc.columbia.edu/pub/software/apache/avro/avro-1.8.2/java/ On
+ * versioning:
+ * https://stackoverflow.com/questions/12165589/does-avro-schema-evolution-require-access-to-both-old-and-new-schemas
  *
  */
 
@@ -48,13 +52,13 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 	/**
 	 * Args:
 	 * 
-	 * - schema.avsc file
-	 * - CSV input file (will be read entirely, so each such file will have the appropriate number of rows)
-	 * - base name of output file (will have a numeric value appended to it)
-	 * - number of rows per file (the batch size)
+	 * - schema.avsc file - CSV input file (will be read entirely, so each such file
+	 * will have the appropriate number of rows) - base name of output file (will
+	 * have a numeric value appended to it) - number of rows per file (the batch
+	 * size)
 	 * 
 	 */
-	
+
 	private static final String SCHEMA_ARG = "--schema-file";
 	private String schemaFile;
 	private static final String CSV_ARG = "--csv-input-file";
@@ -63,9 +67,9 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 	private String outFileBaseName;
 	private static final String N_ROWS_ARG = "--batch-size";
 	private int nRowsPerBatch;
-	
+
 	private Schema schema; // Avro schema (not the file -- the schema)
-	
+
 	@Override
 	public void run(String... args) throws Exception {
 		if (args.length < 8) {
@@ -84,12 +88,8 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				usage();
 			}
 		}
-		System.out.println("\n"
-				+ "Avro schema file: " + schemaFile + "\n"
-				+ "CSV file (input): " + csvFile + "\n"
-				+ "Output file base name: " + outFileBaseName + "\n"
-				+ "N rows per batch: " + nRowsPerBatch
-		);
+		System.out.println("\n" + "Avro schema file: " + schemaFile + "\n" + "CSV file (input): " + csvFile + "\n"
+				+ "Output file base name: " + outFileBaseName + "\n" + "N rows per batch: " + nRowsPerBatch);
 
 		this.schema = new Schema.Parser().parse(new File(schemaFile));
 		List<Field> fieldList = schema.getFields();
@@ -109,8 +109,9 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 			System.out.println("Field: " + f.name() + ", type: " + typeName);
 		}
 		System.out.printf("Namespace: %s, N columns: %d\n\n", schema.getNamespace(), nFields);
-		
-		// Open the CSV input file, supporting uncompressed and Gzip compressed files (with ".gz" suffix)
+
+		// Open the CSV input file, supporting uncompressed and Gzip compressed files
+		// (with ".gz" suffix)
 		InputStream fileStream = new FileInputStream(csvFile);
 		Reader reader;
 		if (csvFile.endsWith(".gz")) {
@@ -118,11 +119,11 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		} else {
 			reader = new InputStreamReader(fileStream);
 		}
-		
+
 		Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(reader);
 		int nRowsThisFile = 0;
 		int chunkNumber = 0;
-		DataFileWriter<GenericRecord>  dataFileWriter = getDataFileWriter(chunkNumber++);
+		DataFileWriter<GenericRecord> dataFileWriter = getDataFileWriter(chunkNumber++);
 		GenericRecord row = new GenericData.Record(schema);
 		for (CSVRecord record : records) {
 			if (nRowsThisFile == this.nRowsPerBatch) {
@@ -130,50 +131,60 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				dataFileWriter = getDataFileWriter(chunkNumber++);
 				nRowsThisFile = 0;
 			}
-			for (int i = 0; i < nFields; i++) {
-				String colValue = record.get(i);
-				// Only add non-null values
-				if (colValue != null && colValue.length() > 0) {
-					// Need to deal with types: String is ok, but must handle boolean, int, etc.
-					String fieldName = fieldNameList.get(i);
-					String fieldTypeName = fieldTypeNameList.get(i);
-					if ("string".equals(fieldTypeName)) {
-						row.put(fieldNameList.get(i), colValue);
-					} else if ("boolean".equals(fieldTypeName)) {
-						row.put(fieldNameList.get(i), Boolean.valueOf(colValue));
-					} else if ("int".equals(fieldTypeName)) {
-						row.put(fieldNameList.get(i), Integer.valueOf(colValue));
-					} else {
-						throw new RuntimeException("Unsupported Avro type: " + fieldTypeName);
+			try {
+				for (int i = 0; i < nFields; i++) {
+					String colValue = record.get(i);
+					// Only add non-null values
+					if (colValue != null && colValue.length() > 0) {
+						// Need to deal with types: String is ok, but must handle boolean, int, etc.
+						String fieldName = fieldNameList.get(i);
+						String fieldTypeName = fieldTypeNameList.get(i);
+						if ("string".equals(fieldTypeName)) {
+							row.put(fieldNameList.get(i), colValue);
+						} else if ("boolean".equals(fieldTypeName)) {
+							row.put(fieldNameList.get(i), Boolean.valueOf(colValue));
+						} else if ("int".equals(fieldTypeName)) {
+							row.put(fieldNameList.get(i), Integer.valueOf(colValue));
+						} else if ("float".equals(fieldTypeName)) {
+							row.put(fieldNameList.get(i), Float.valueOf(colValue));
+						} else {
+							throw new RuntimeException("Unsupported Avro type: " + fieldTypeName);
+						}
 					}
 				}
+				dataFileWriter.append(row);
+			} catch (Exception e) {
+				System.out.println("Exception: " + e.getMessage());
+				System.out.println("ERROR INPUT: " + record.toString());
+				throw new RuntimeException(e);
 			}
-			dataFileWriter.append(row);
 			++nRowsThisFile;
 		}
-		
+
 		if (dataFileWriter != null) {
 			dataFileWriter.close();
 			dataFileWriter = null;
 		}
 		reader.close();
 	}
-	
+
 	// Open a new output file, appending the batch number to the file name
-	private DataFileWriter<GenericRecord> getDataFileWriter (int chunkNumber) throws IOException {
+	private DataFileWriter<GenericRecord> getDataFileWriter(int chunkNumber) throws IOException {
 		String avroFileName = String.format("%s-%03d.avro", outFileBaseName, chunkNumber);
 		System.out.println("Opening new Avro file: " + avroFileName);
 		File file = new File(avroFileName);
 		DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<GenericRecord>(schema);
 		DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(datumWriter);
 		/*
-		 *  Codecs: https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/CodecFactory.html
+		 * Codecs:
+		 * https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/CodecFactory
+		 * .html
 		 */
 		dataFileWriter.setCodec(CodecFactory.snappyCodec());
 		dataFileWriter.create(schema, file);
 		return dataFileWriter;
 	}
-	
+
 	private void usage() {
 		System.err.println("Args: " + SCHEMA_ARG + " file.avsc " + CSV_ARG + " input.csv " + OUT_FILE_ARG
 				+ " output_file_name " + N_ROWS_ARG + " <INT_VALUE>");

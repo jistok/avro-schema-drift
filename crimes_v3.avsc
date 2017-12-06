@@ -18,10 +18,10 @@
      {"name": "ward", "type": ["int", "null"]},
      {"name": "community_area", "type": ["string", "null"]},
      {"name": "fbi_code", "type": ["string", "null"]},
-     {"name": "crime_year", "type": ["int", "null"]},
-     {"name": "record_update_date", "type": ["string", "null"]},
      {"name": "x_coord", "type": ["float", "null"]},
      {"name": "y_coord", "type": ["float", "null"]},
+     {"name": "crime_year", "type": ["int", "null"]},
+     {"name": "record_update_date", "type": ["string", "null"]},
      {"name": "latitude", "type": ["float", "null"]},
      {"name": "longitude", "type": ["float", "null"]},
      {"name": "location", "type": ["string", "null"]}
