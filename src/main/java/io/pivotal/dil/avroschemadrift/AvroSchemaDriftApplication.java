@@ -33,6 +33,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Compression: https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/DataFileWriter.html
  * Avro API: https://avro.apache.org/docs/current/gettingstartedjava.html#Serializing+and+deserializing+without+code+generation
  * Avro command line utility: http://www.michael-noll.com/blog/2013/03/17/reading-and-writing-avro-files-from-the-command-line/
+ * Download Avro: http://mirror.cc.columbia.edu/pub/software/apache/avro/avro-1.8.2/java/
  * On versioning: https://stackoverflow.com/questions/12165589/does-avro-schema-evolution-require-access-to-both-old-and-new-schemas
  *
  */
@@ -89,6 +90,7 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				+ "Output file base name: " + outFileBaseName + "\n"
 				+ "N rows per batch: " + nRowsPerBatch
 		);
+
 		this.schema = new Schema.Parser().parse(new File(schemaFile));
 		List<Field> fieldList = schema.getFields();
 		int nFields = fieldList.size();
@@ -126,6 +128,7 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 			if (nRowsThisFile == this.nRowsPerBatch) {
 				dataFileWriter.close();
 				dataFileWriter = getDataFileWriter(chunkNumber++);
+				nRowsThisFile = 0;
 			}
 			for (int i = 0; i < nFields; i++) {
 				String colValue = record.get(i);
