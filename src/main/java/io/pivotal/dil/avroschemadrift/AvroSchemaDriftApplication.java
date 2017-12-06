@@ -1,16 +1,18 @@
 package io.pivotal.dil.avroschemadrift;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -83,19 +85,23 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		
 		// Open the CSV input file, supporting uncompressed and Gzip compressed files (with ".gz" suffix)
 		InputStream fileStream = new FileInputStream(csvFile);
-		BufferedReader br = null;
+		Reader reader;
 		if (csvFile.endsWith(".gz")) {
-			Reader decoder = new InputStreamReader(new GZIPInputStream(fileStream), "UTF-8");
-			br = new BufferedReader(decoder);
+			reader = new InputStreamReader(new GZIPInputStream(fileStream), "UTF-8");
 		} else {
-			br = new BufferedReader(new InputStreamReader(fileStream));
+			reader = new InputStreamReader(fileStream);
 		}
-		String csvLine = null;
-		while ((csvLine = br.readLine()) != null) {
-			System.out.println(csvLine);
+		Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(reader);
+		List<String> colValList = new ArrayList<>();
+		for (CSVRecord record : records) {
+			for (int i = 0; i < nFields; i++) {
+				String colValue = record.get(i);
+				colValList.add(colValue);
+			}
+			System.out.println(String.join("|", colValList.toArray(new String[nFields])));
+			colValList.clear();
 		}
-		br.close();
-		
+		reader.close();
 		// Open the output file, appending the batch number to the file name
 	}
 	
