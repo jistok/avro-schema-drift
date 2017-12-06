@@ -2,6 +2,7 @@ package io.pivotal.dil.avroschemadrift;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -11,6 +12,12 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Field;
+import org.apache.avro.file.CodecFactory;
+import org.apache.avro.file.DataFileWriter;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumWriter;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.boot.CommandLineRunner;
@@ -54,6 +61,8 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 	private static final String N_ROWS_ARG = "--batch-size";
 	private int nRowsPerBatch;
 	
+	private Schema schema; // Avro schema (not the file -- the schema)
+	
 	@Override
 	public void run(String... args) throws Exception {
 		if (args.length < 8) {
@@ -78,9 +87,13 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 				+ "Output file base name: " + outFileBaseName + "\n"
 				+ "N rows per batch: " + nRowsPerBatch
 		);
-		Schema schema = new Schema.Parser().parse(new File(schemaFile));
+		this.schema = new Schema.Parser().parse(new File(schemaFile));
 		List<Field> fieldList = schema.getFields();
 		int nFields = fieldList.size();
+		List<String> fieldNameList = new ArrayList<>(nFields);
+		for (Field f : fieldList) {
+			fieldNameList.add(f.name());
+		}
 		System.out.printf("Namespace: %s, N columns: %d\n\n", schema.getNamespace(), nFields);
 		
 		// Open the CSV input file, supporting uncompressed and Gzip compressed files (with ".gz" suffix)
@@ -91,18 +104,53 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		} else {
 			reader = new InputStreamReader(fileStream);
 		}
+		
 		Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(reader);
-		List<String> colValList = new ArrayList<>();
+		//List<String> colValList = new ArrayList<>();
+		int nRowsThisFile = 0;
+		int chunkNumber = 0;
+		DataFileWriter<GenericRecord>  dataFileWriter = getDataFileWriter(chunkNumber++);
+		GenericRecord row = new GenericData.Record(schema);
 		for (CSVRecord record : records) {
+			if (nRowsThisFile == this.nRowsPerBatch) {
+				dataFileWriter.close();
+				dataFileWriter = getDataFileWriter(chunkNumber++);
+			}
 			for (int i = 0; i < nFields; i++) {
 				String colValue = record.get(i);
-				colValList.add(colValue);
+				// Only add non-null values
+				if (colValue != null && colValue.length() > 0) {
+					// Need to deal with types: String is ok, but must handle boolean, int, etc.
+					row.put(fieldNameList.get(i), colValue);
+				}
+				//colValList.add(colValue);
 			}
-			System.out.println(String.join("|", colValList.toArray(new String[nFields])));
-			colValList.clear();
+			dataFileWriter.append(row);
+			/*System.out.println(String.join("|", colValList.toArray(new String[nFields])));
+			colValList.clear();*/
+			
+			++nRowsThisFile;
+		}
+		
+		if (dataFileWriter != null) {
+			dataFileWriter.close();
+			dataFileWriter = null;
 		}
 		reader.close();
-		// Open the output file, appending the batch number to the file name
+	}
+	
+	// Open a new output file, appending the batch number to the file name
+	private DataFileWriter<GenericRecord> getDataFileWriter (int chunkNumber) throws IOException {
+		String avroFileName = String.format("%s-%03d.avro", outFileBaseName, chunkNumber);
+		File file = new File(avroFileName);
+		DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<GenericRecord>(schema);
+		DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(datumWriter);
+		/*
+		 *  Codecs: https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/CodecFactory.html
+		 */
+		dataFileWriter.setCodec(CodecFactory.snappyCodec());
+		dataFileWriter.create(schema, file);
+		return dataFileWriter;
 	}
 	
 	private void usage() {
