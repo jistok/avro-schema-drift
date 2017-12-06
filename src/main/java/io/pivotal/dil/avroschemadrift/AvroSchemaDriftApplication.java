@@ -28,6 +28,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Reference:
  * 
  * Types: https://avro.apache.org/docs/1.8.2/spec.html
+ * Commons CSV: https://commons.apache.org/proper/commons-csv/user-guide.html
  * Compression: https://avro.apache.org/docs/1.8.2/api/java/org/apache/avro/file/DataFileWriter.html
  * Avro API: https://avro.apache.org/docs/current/gettingstartedjava.html#Serializing+and+deserializing+without+code+generation
  * Avro command line utility: http://www.michael-noll.com/blog/2013/03/17/reading-and-writing-avro-files-from-the-command-line/
@@ -106,7 +107,6 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 		}
 		
 		Iterable<CSVRecord> records = CSVFormat.RFC4180.parse(reader);
-		//List<String> colValList = new ArrayList<>();
 		int nRowsThisFile = 0;
 		int chunkNumber = 0;
 		DataFileWriter<GenericRecord>  dataFileWriter = getDataFileWriter(chunkNumber++);
@@ -123,12 +123,8 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 					// Need to deal with types: String is ok, but must handle boolean, int, etc.
 					row.put(fieldNameList.get(i), colValue);
 				}
-				//colValList.add(colValue);
 			}
 			dataFileWriter.append(row);
-			/*System.out.println(String.join("|", colValList.toArray(new String[nFields])));
-			colValList.clear();*/
-			
 			++nRowsThisFile;
 		}
 		
