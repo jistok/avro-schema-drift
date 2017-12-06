@@ -1,0 +1,24 @@
+{
+  "namespace": "crimes.v1",
+  "type": "record",
+  "name": "Crimes",
+  "fields": [
+     {"name": "id", "type": "int"},
+     {"name": "case_number", "type": ["string", "null"]},
+     {"name": "crime_date", "type": ["string", "null"]},
+     {"name": "block", "type": ["string", "null"]},
+     {"name": "iucr", "type": ["string", "null"]},
+     {"name": "primary_type", "type": ["string", "null"]},
+     {"name": "description", "type": ["string", "null"]},
+     {"name": "location_desc", "type": ["string", "null"]},
+     {"name": "arrest", "type": ["boolean", "null"]},
+     {"name": "domestic", "type": ["boolean", "null"]},
+     {"name": "beat", "type": ["string", "null"]},
+     {"name": "district", "type": ["string", "null"]},
+     {"name": "ward", "type": ["int", "null"]},
+     {"name": "community_area", "type": ["string", "null"]},
+     {"name": "fbi_code", "type": ["string", "null"]},
+     {"name": "crime_year", "type": ["int", "null"]},
+     {"name": "record_update_date", "type": ["string", "null"]}
+  ]
+}
