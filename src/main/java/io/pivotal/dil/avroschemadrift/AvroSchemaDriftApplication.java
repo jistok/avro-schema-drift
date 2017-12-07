@@ -136,8 +136,6 @@ public class AvroSchemaDriftApplication implements CommandLineRunner {
 					String colValue = record.get(i);
 					// Only add non-null values
 					if (colValue != null && colValue.length() > 0) {
-						// Need to deal with types: String is ok, but must handle boolean, int, etc.
-						String fieldName = fieldNameList.get(i);
 						String fieldTypeName = fieldTypeNameList.get(i);
 						if ("string".equals(fieldTypeName)) {
 							row.put(fieldNameList.get(i), colValue);
