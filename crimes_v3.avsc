@@ -1,5 +1,5 @@
 {
-  "namespace": "v.3",
+  "namespace": "io.pivotal.dil",
   "doc": "id|case_number|crime_date|block|iucr|primary_type|description|location_desc|arrest|domestic|beat|district|ward|community_area|fbi_code|x_coord|y_coord|crime_year|record_update_date|latitude|longitude|location",
   "type": "record",
   "name": "Crimes",
