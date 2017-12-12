@@ -29,8 +29,14 @@ done
 That should yield 30 files in /tmp, each containing 1,000 entries.  Next: figure out how we'll load
 these Avro files, detecting and reacting to any *schema drift* as we do that.
 
-## Load Avro files into a Kafka topic
+## Set up Kafka and create a topic
 
+* Clone the "Round Trip" project: `git clone https://github.com/mgoddard-pivotal/gpdb-kafka-round-trip.git`
+* `cd ./gpdb-kafka-round-trip/`
+* Download Kafka per instructions in this project
+* Edit `./kafka_env.sh`
+* Start up Zookeeper
+* Start up Kafka
 * Create the topic (from within the `gpdb-kafka-round-trip` directory):
 
 ```
@@ -41,18 +47,23 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 >   --partitions $partition_count --zookeeper $zk_host:2181
 ```
 
-* Load Avro files into this topic:
+## Build and install the Avro Kafka Go programs
 
-FIXME: Add notes about checkout/build of confluent-kafka-go
+* Clone this repo: `git clone https://github.com/mgoddard-pivotal/confluent-kafka-go.git`
+* Build the Avro Kafka producer: `cd ./confluent-kafka-go/examples/avro_producer/ && go build && cp ./avro_producer ~/`
+* Build the Avro Kafka consumer: `cd ./confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/`
+
+## Set up the GPDB tables
+
+* Create the heap table to load: `psql -f create_heap_table.sql`
+* Create the external web table, which will consume the Kafka topic: `create_external_table.sql`
+
+## Iterate over the Avro data files, loading into Kafka and loading GPDB
+
+`$HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v2-001.avro`
 
 ```
 [avro_producer]$ ./avro_producer localhost:9092 crimes_avro /tmp/crimes_v*.avro
-
-```
-
-* Consume Avro files from topic:
-
-```
 
 ```
 
