@@ -48,13 +48,16 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 ```
 
 ## Build and install the Avro Kafka Go programs
-* Install this fork of _goavro_: `go get github.com/mgoddard-pivotal/goavro`
 * Clone this repo: `git clone https://github.com/mgoddard-pivotal/confluent-kafka-go.git`
 * Build the Avro Kafka producer: `cd ./confluent-kafka-go/examples/avro_producer/ && go build && cp ./avro_producer ~/`
-* Build the Avro Kafka consumer: `cd ./confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/`
+* Install the Redis client: `go get github.com/garyburd/redigo/redis`
+* Install the PostgreSQL client: `go get github.com/lib/pq`
+* Install this fork of _goavro_: `go get github.com/mgoddard-pivotal/goavro`
+* Build the Avro Kafka consumer: `cd ~/confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/`
 
 ## Set up the GPDB tables
 
+* `cd ~/avro-schema-drift/`
 * Create the heap table to load: `psql -f create_heap_table.sql`
 * Create the external web table, which will consume the Kafka topic: `create_external_table.sql`
 
