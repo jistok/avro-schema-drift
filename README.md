@@ -48,7 +48,7 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 ```
 
 ## Build and install the Avro Kafka Go programs
-
+* Install this fork of _goavro_: `go get github.com/mgoddard-pivotal/goavro`
 * Clone this repo: `git clone https://github.com/mgoddard-pivotal/confluent-kafka-go.git`
 * Build the Avro Kafka producer: `cd ./confluent-kafka-go/examples/avro_producer/ && go build && cp ./avro_producer ~/`
 * Build the Avro Kafka consumer: `cd ./confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/`
