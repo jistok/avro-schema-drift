@@ -22,6 +22,7 @@ table_name=$( perl -ne 'print "$1\n" if /^\s+"namespace": "([^"]+)",\s*$/;' < $a
 column_list=$( perl -ne 'print "$1\n" if /^\s+"doc": "([^"]+)",\s*$/;' < $avro_schema )
 echo "SET $table_name \"$column_list\"" | $redis_cli
 echo "GET $table_name" | $redis_cli
+echo "CONFIG SET protected-mode no" | $redis_cli
 
 echo "Done"
 
