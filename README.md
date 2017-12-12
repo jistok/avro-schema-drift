@@ -59,7 +59,11 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 
 * `cd ~/avro-schema-drift/`
 * Create the heap table to load: `psql -f create_heap_table.sql`
-* Create the external web table, which will consume the Kafka topic: `create_external_table.sql`
+* Create the external web table, which will consume the Kafka topic: `psql -f create_external_table.sql`
+
+## Install and configure Redis
+
+* `./bootstrap_redis.sh`
 
 ## Iterate over the Avro data files, loading into Kafka and loading GPDB
 
