@@ -67,10 +67,10 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 
 ## Iterate over the Avro data files, loading into Kafka and loading GPDB
 
-`$HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v2-001.avro`
-
+* Verify the table structure: `echo "\\d crimes" | psql`
+* Put the Avro data for the first schema version into Kafka:
 ```
-[avro_producer]$ ./avro_producer localhost:9092 crimes_avro /tmp/crimes_v*.avro
-
+$HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
 ```
+* Load data: `echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
 
