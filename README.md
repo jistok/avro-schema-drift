@@ -74,3 +74,5 @@ $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
 ```
 * Load data: `echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
 
+* Re-create the external table: `psql -f ./create_external_table.sql`
+
