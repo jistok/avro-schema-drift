@@ -67,12 +67,131 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 
 ## Iterate over the Avro data files, loading into Kafka and loading GPDB
 
-* Verify the table structure: `echo "\\d crimes" | psql`
+* Verify the table structure:
+```
+  echo "\\d crimes" | psql
+```
 * Put the Avro data for the first schema version into Kafka:
 ```
-$HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
+  $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
 ```
-* Load data: `echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
+* Load data:
+```
+  echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
+```
 
-* Re-create the external table: `psql -f ./create_external_table.sql`
+```
+[gpadmin@avro-drift-demo avro-schema-drift]$ ./reset_redis.sh 
+Setting the initial value, v1, of the column names in Redis
+OK
+"id|case_number|crime_date|block|iucr|primary_type|description|location_desc|arrest|domestic|beat|district|ward|community_area|fbi_code|x_coord|y_coord"
+OK
+Done
+[gpadmin@avro-drift-demo avro-schema-drift]$ psql -f create_heap_table.sql 
+Timing is on.
+DROP TABLE
+Time: 151.128 ms
+CREATE TABLE
+Time: 118.571 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ psql -f ./create_external_table.sql 
+Timing is on.
+DROP EXTERNAL TABLE
+Time: 65.840 ms
+CREATE EXTERNAL TABLE
+Time: 76.937 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
+Created Producer rdkafka#producer-1
+Reading Avro file /tmp/crimes_v1-000.avro now ...
+Reading Avro file /tmp/crimes_v1-001.avro now ...
+Reading Avro file /tmp/crimes_v1-002.avro now ...
+Reading Avro file /tmp/crimes_v1-003.avro now ...
+Reading Avro file /tmp/crimes_v1-004.avro now ...
+Reading Avro file /tmp/crimes_v1-005.avro now ...
+Reading Avro file /tmp/crimes_v1-006.avro now ...
+Reading Avro file /tmp/crimes_v1-007.avro now ...
+Reading Avro file /tmp/crimes_v1-008.avro now ...
+Reading Avro file /tmp/crimes_v1-009.avro now ...
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 10000
+Time: 3199.418 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 0
+Time: 3768.138 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v2-00?.avro
+Created Producer rdkafka#producer-1
+Reading Avro file /tmp/crimes_v2-000.avro now ...
+Reading Avro file /tmp/crimes_v2-001.avro now ...
+Reading Avro file /tmp/crimes_v2-002.avro now ...
+Reading Avro file /tmp/crimes_v2-003.avro now ...
+Reading Avro file /tmp/crimes_v2-004.avro now ...
+Reading Avro file /tmp/crimes_v2-005.avro now ...
+Reading Avro file /tmp/crimes_v2-006.avro now ...
+Reading Avro file /tmp/crimes_v2-007.avro now ...
+Reading Avro file /tmp/crimes_v2-008.avro now ...
+Reading Avro file /tmp/crimes_v2-009.avro now ...
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 0
+Time: 2154.567 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ ~/ddl-executor public.crimes
+GP_MASTER_HOST: avro-drift-demo
+GP_MASTER_PORT: 5432
+GP_DATABASE: gpadmin
+Connected to GPDB (host: avro-drift-demo, port: 5432, DB: gpadmin)
+DDL: ALTER TABLE public.crimes ADD COLUMN crime_year INT, ADD COLUMN record_update_date TEXT
+SUCCESS
+DDL: ALTER EXTERNAL TABLE public.crimes_kafka ADD COLUMN crime_year INT, ADD COLUMN record_update_date TEXT
+SUCCESS
+Redis: SET public.crimes "id|case_number|crime_date|block|iucr|primary_type|description|location_desc|arrest|domestic|beat|district|ward|community_area|fbi_code|x_coord|y_coord|crime_year|record_update_date"
+SUCCEEDED
+SUCCESS deleting DDL key "public.crimes-DDL" from Redis
+All done
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 10000
+Time: 718.363 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 0
+Time: 3897.438 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v3-00?.avro
+Created Producer rdkafka#producer-1
+Reading Avro file /tmp/crimes_v3-000.avro now ...
+Reading Avro file /tmp/crimes_v3-001.avro now ...
+Reading Avro file /tmp/crimes_v3-002.avro now ...
+Reading Avro file /tmp/crimes_v3-003.avro now ...
+Reading Avro file /tmp/crimes_v3-004.avro now ...
+Reading Avro file /tmp/crimes_v3-005.avro now ...
+Reading Avro file /tmp/crimes_v3-006.avro now ...
+Reading Avro file /tmp/crimes_v3-007.avro now ...
+Reading Avro file /tmp/crimes_v3-008.avro now ...
+Reading Avro file /tmp/crimes_v3-009.avro now ...
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 0
+Time: 115.780 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ ~/ddl-executor public.crimes
+GP_MASTER_HOST: avro-drift-demo
+GP_MASTER_PORT: 5432
+GP_DATABASE: gpadmin
+Connected to GPDB (host: avro-drift-demo, port: 5432, DB: gpadmin)
+DDL: ALTER TABLE public.crimes ADD COLUMN latitude FLOAT4, ADD COLUMN longitude FLOAT4, ADD COLUMN location TEXT
+SUCCESS
+DDL: ALTER EXTERNAL TABLE public.crimes_kafka ADD COLUMN latitude FLOAT4, ADD COLUMN longitude FLOAT4, ADD COLUMN location TEXT
+SUCCESS
+Redis: SET public.crimes "id|case_number|crime_date|block|iucr|primary_type|description|location_desc|arrest|domestic|beat|district|ward|community_area|fbi_code|x_coord|y_coord|crime_year|record_update_date|latitude|longitude|location"
+SUCCEEDED
+SUCCESS deleting DDL key "public.crimes-DDL" from Redis
+All done
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 10000
+Time: 2806.974 ms
+[gpadmin@avro-drift-demo avro-schema-drift]$ echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
+Timing is on.
+INSERT 0 0
+Time: 4496.397 ms
+```
 
