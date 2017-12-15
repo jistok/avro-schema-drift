@@ -81,22 +81,33 @@ the initial version, `v1`, of the Avro schema and corresponding tables, just cre
 
 ## On the GPDB master host, logged in as the _gpadmin_ user, iterate over the three Avro schema variants
 
+To change the schema version, change the `v1` in the third step, below, to `v2` and then `v3`.
+
 * Run the DDL executor:
 ```
   $HOME/ddl-executor public.crimes
 ```
-* Verify the table structure:
-```
-  echo "\\d crimes" | psql
-```
+
 * Dump the Avro data for the appropriate schema version into the Kafka topic:
 ```
   $HOME/avro_producer localhost:9092 crimes_avro /tmp/crimes_v1-00?.avro
 ```
+
 * Load data:
 ```
   echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
 ```
+
+* Verify the table structure:
+```
+  echo "\\d crimes" | psql
+```
+
+FIXME: come up with a more effective way to show this.  Probably, use two windows: in window 1,
+set up a Bash while loop that runs steps 1, 3, and 4, sleeping 5 or 10 seconds between runs; in
+window 2, run step 2, the dumping of the Avro data into the topic, sleeping that same interval
+between incrementing the version and dumping the next set of data.
+
 * At the end, reset the data in Redis and recreate the tables in GPDB:
 ```
   ./reset_redis.sh
