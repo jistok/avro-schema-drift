@@ -68,6 +68,7 @@ load process.  Prior to each load process, _DDL executor_ (`ddl-executor`) is ru
 previous load process.  We envision running this periodically, likely via _cron_.
 
 * `cd ~/avro-schema-drift/`
+* Create the `gpadmin` database, if it doesn't yet exist: `createdb gpadmin`
 * Create the heap table, the destination for the data: `psql -f create_heap_table.sql`
 * Create the external web table, which will consume from the Kafka topic: `psql -f create_external_table.sql`
 
@@ -78,7 +79,7 @@ the initial version, `v1`, of the Avro schema and corresponding tables, just cre
 
 * `./bootstrap_redis.sh`
 
-## On the GPDB master host, iterate over the three Avro schema variants
+## On the GPDB master host, logged in as the _gpadmin_ user, iterate over the three Avro schema variants
 
 * Run the DDL executor:
 ```
@@ -96,16 +97,16 @@ the initial version, `v1`, of the Avro schema and corresponding tables, just cre
 ```
   echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql`
 ```
+* At the end, reset the data in Redis and recreate the tables in GPDB:
+```
+  ./reset_redis.sh
+```
 
 ## Below, we show how this scenario plays out
 
+FIXME: re-run this per the script, above
+
 ```
-[gpadmin@avro-drift-demo avro-schema-drift]$ ./reset_redis.sh 
-Setting the initial value, v1, of the column names in Redis
-OK
-"id|case_number|crime_date|block|iucr|primary_type|description|location_desc|arrest|domestic|beat|district|ward|community_area|fbi_code|x_coord|y_coord"
-OK
-Done
 [gpadmin@avro-drift-demo avro-schema-drift]$ psql -f create_heap_table.sql 
 Timing is on.
 DROP TABLE
