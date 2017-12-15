@@ -1,44 +1,43 @@
-# Spring Boot Command Line Tool to Write Compressed Avro from CSV Data
+# Handling Schema Drift (or, evolution) With Avro Data and Greenplum Database (GPDB)
 
 This is to support a POC focused on handling _schema drift_.  The idea is that, over the course of
-loading the Avro data, the schema changes twice. To support this scenario, there are three different
-versions of the Avro schema and three compressed CSV data files.
+time, the Avro formatted data changes, with new fields being added.  Avro files contain the schema
+for the data, so we can determine when schema changes happen if we compare the schema for each of
+the Avro files being processed to the current schema.  Since the ultimate destination for this
+data is a table in GPDB, any time the Avro schema changes, those changes need to be
+made in the target table.  This is what we seek to explore here with this demo. Additionally, the
+data transport layer we'll use will be Kafka, with each of the Avro files being loaded into a Kafka
+topic and consumed using _external web tables_ in GPDB.
+
+## Use this Spring Boot command line tool to write compressed Avro from CSV data
 
 The process involves building the Spring Boot app, running it against the three versions of the
 schema and the three CSV input files.  Each run will create a number of Avro files, which will
-be used in the next part of the effort (noticing that the schema has changed and making corresponding
-changes to the DDL of the target table).
+be used in the next part of the effort.
 
-## Build the Boot app
-
-`./mvnw clean package -DskipTests`
-
-## Run the app three times -- once for each version of the schema
-
+* Build the app: `./mvnw clean package -DskipTests`
+* Run the app once for each of the three Avro schema variants:
 ```
-for ver in {1..3}
-do
-  java -jar ./target/avro-schema-drift-0.0.1-SNAPSHOT.jar \
-    --schema-file ./crimes_v${ver}.avsc \
-    --csv-input-file ./chicago_crimes_10k_part${ver}.csv.gz \
-    --output-file /tmp/crimes_v${ver} \
-    --batch-size 1000
-done
+  for ver in {1..3}
+  do
+    java -jar ./target/avro-schema-drift-0.0.1-SNAPSHOT.jar \
+      --schema-file ./crimes_v${ver}.avsc \
+      --csv-input-file ./chicago_crimes_10k_part${ver}.csv.gz \
+      --output-file /tmp/crimes_v${ver} \
+      --batch-size 1000
+  done
 ```
-
-That should yield 30 files in /tmp, each containing 1,000 entries.  Next: figure out how we'll load
-these Avro files, detecting and reacting to any *schema drift* as we do that.
+This should yield 30 files in /tmp, each containing 1,000 entries.
 
 ## Set up Kafka and create a topic
 
-* Clone the "Round Trip" project: `git clone https://github.com/mgoddard-pivotal/gpdb-kafka-round-trip.git`
+* Clone the "GPDB Kafka Round Trip" project: `git clone https://github.com/mgoddard-pivotal/gpdb-kafka-round-trip.git`
 * `cd ./gpdb-kafka-round-trip/`
 * Download Kafka per instructions in this project
 * Edit `./kafka_env.sh`
 * Start up Zookeeper
 * Start up Kafka
-* Create the topic (from within the `gpdb-kafka-round-trip` directory):
-
+* Create the `crimes_avro` topic:
 ```
 [gpdb-kafka-round-trip]$ topic="crimes_avro"
 [gpdb-kafka-round-trip]$ partition_count=8
@@ -48,18 +47,28 @@ these Avro files, detecting and reacting to any *schema drift* as we do that.
 ```
 
 ## Build and install the Avro Kafka Go programs
+
 * Clone this repo: `git clone https://github.com/mgoddard-pivotal/confluent-kafka-go.git`
-* Build the Avro Kafka producer: `cd ./confluent-kafka-go/examples/avro_producer/ && go build && cp ./avro_producer ~/`
+* Build and install the Avro Kafka producer: `cd ./confluent-kafka-go/examples/avro_producer/ && go build && cp ./avro_producer ~/ && cd -`
 * Install the Redis client: `go get github.com/garyburd/redigo/redis`
 * Install the PostgreSQL client: `go get github.com/lib/pq`
 * Install this fork of _goavro_: `go get github.com/mgoddard-pivotal/goavro`
-* Build the Avro Kafka consumer: `cd ~/confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/`
+* Build and install the Avro Kafka consumer: `cd ~/confluent-kafka-go/examples/go-kafkacat-avro/ && go build && cp ./go-kafkacat-avro ~/ && cd -`
+* Build and install the DDL executor program: `cd ~/confluent-kafka-go/examples/ddl-executor/ && go build && cp ./ddl-executor ~/ && cd -`
 
 ## Set up the GPDB tables
 
+We use the external web table, the second table created here, to run the `go-kafkacat-avro` binary which consumes
+Avro data from the Kafka topic, checks the schema for each Avro file it encounters, and ensures that its list of
+fields is equal to, or a subset of, those currently defined for the GPDB table (we store this in Redis, keyed by
+the schema and table name).  If this is not the case, a flag is set in Redis for the current GPDB transaction ID
+(`GP_XID`), so that any running parallel load processes will stop.  Next, an `ALTER TABLE ...` DDL expression is 
+generated and placed into Redis, and this instance of `go-kafkacat-avro` stops running, terminating the current
+load process.  Prior to each load process, a 
+
 * `cd ~/avro-schema-drift/`
-* Create the heap table to load: `psql -f create_heap_table.sql`
-* Create the external web table, which will consume the Kafka topic: `psql -f create_external_table.sql`
+* Create the heap table, the destination for the data: `psql -f create_heap_table.sql`
+* Create the external web table, which will consume from the Kafka topic: `psql -f create_external_table.sql`
 
 ## Install and configure Redis
 
