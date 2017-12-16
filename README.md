@@ -105,18 +105,8 @@ To change the schema version, change the `v1` to `v2`, and then `v3`.
   echo "INSERT INTO crimes SELECT * FROM crimes_kafka" | psql
 ```
 
-FIXME: come up with a more effective way to show this.  Probably, use two windows: in window 1,
-set up a Bash while loop that runs steps 1, 3, and 4, sleeping 5 or 10 seconds between runs; in
-window 2, run step 2, the dumping of the Avro data into the topic, sleeping that same interval
-between incrementing the version and dumping the next set of data.
-
 * At the end, reset the data in Redis and recreate the tables in GPDB:
 ```
   ./reset_redis.sh
 ```
-
-## Below, we show how this scenario plays out
-
-FIXME: re-run this per the script, above
-
 
