@@ -40,7 +40,7 @@ This should yield 30 files in /tmp, each containing 1,000 entries.
 * Create the `crimes_avro` topic:
 ```
 [gpdb-kafka-round-trip]$ topic="crimes_avro"
-[gpdb-kafka-round-trip]$ partition_count=8
+[gpdb-kafka-round-trip]$ partition_count=256
 [gpdb-kafka-round-trip]$ . ./kafka_env.sh
 [gpdb-kafka-round-trip]$ $kafka_dir/bin/kafka-topics.sh --create --topic $topic --replication-factor 1 \
 >   --partitions $partition_count --zookeeper $zk_host:2181
