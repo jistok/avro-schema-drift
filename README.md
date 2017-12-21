@@ -107,6 +107,6 @@ To change the schema version, change the `v1` to `v2`, and then `v3`.
 
 * At the end, reset the data in Redis and recreate the tables in GPDB:
 ```
-  ./reset_redis.sh
+  ./reset_demo.sh
 ```
 
